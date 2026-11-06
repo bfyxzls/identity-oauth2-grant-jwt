@@ -381,6 +381,8 @@
         <carbon.identity.package.import.version.range>[5.0.0, 6.0.0)</carbon.identity.package.import.version.range>
         <carbon.identity.oauth.package.import.version.range>[6.0.0, 7.0.0)</carbon.identity.oauth.package.import.version.range>
         <carbon.kernel.package.import.version.range>[4.4.0, 5.0.0)</carbon.kernel.package.import.version.range>
+        <!-- user.api is exported at 1.x (not carbon-kernel 4.x); must match oauth bundle import range -->
+        <carbon.user.api.package.import.version.range>[1.0.1, 2.0.0)</carbon.user.api.package.import.version.range>
         <nimbusds.osgi.version.range>[9.0.0, 11)</nimbusds.osgi.version.range>
         <commons-logging.osgi.version.range>[1.2,2.0)</commons-logging.osgi.version.range>
         <commons-lang.wso2.osgi.version.range>[2.6.0,3.0.0)</commons-lang.wso2.osgi.version.range>

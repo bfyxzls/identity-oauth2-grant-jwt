@@ -465,6 +465,28 @@ public class JWTBearerGrantHandler extends AbstractAuthorizationGrantHandler {
         if (OAuth2Util.isOIDCAuthzRequest(tokReqMsgCtx.getScope())) {
             handleCustomClaims(tokReqMsgCtx, customClaims, identityProvider);
         }
+        // Persist selected assertion claims into UM_USER_ATTRIBUTE (independent of openid scope).
+        // Portal jwt-bearer often uses apim:subscribe only, so handleCustomClaims above may be skipped.
+        if (MapUtils.isNotEmpty(customClaims)) {
+            try {
+                Map<String, String> customClaimMap = getCustomClaims(customClaims);
+                log.info("JWT-bearer validated; invoking attribute persist for subject=" + subject
+                        + ", tenant=" + tenantDomain
+                        + ", customClaimKeys=" + customClaimMap.keySet()
+                        + ", idp=" + (identityProvider != null ? identityProvider.getIdentityProviderName() : "null"));
+                JWTUserAttributePersister.persist(subject, customClaims, identityProvider, tenantDomain, tokReqMsgCtx,
+                        customClaimMap);
+            } catch (Exception e) {
+                log.warn("JWT user attribute persist skipped due to unexpected error: "
+                        + e.getClass().getName() + ": " + e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("JWT user attribute persist unexpected error", e);
+                }
+            }
+        } else {
+            log.info("JWT-bearer validated but customClaims empty; attribute persist not invoked"
+                    + " for subject=" + subject + ", tenant=" + tenantDomain);
+        }
         return true;
     }
 
