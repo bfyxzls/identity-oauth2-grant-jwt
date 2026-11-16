@@ -63,10 +63,11 @@ public class JWTUserAttributePersister {
 
     private static final Log log = LogFactory.getLog(JWTUserAttributePersister.class);
 
+    /** Only userId / username / email / phone are persisted to UM_USER_ATTRIBUTE. */
     private static final String[] PERSISTED_LOCAL_CLAIMS = new String[]{
+            JWTConstants.LOCAL_CLAIM_USERID,
+            JWTConstants.LOCAL_CLAIM_USERNAME,
             JWTConstants.LOCAL_CLAIM_EMAIL,
-            JWTConstants.LOCAL_CLAIM_DISPLAY_NAME,
-            JWTConstants.LOCAL_CLAIM_NICKNAME,
             JWTConstants.LOCAL_CLAIM_MOBILE
     };
 
@@ -120,6 +121,12 @@ public class JWTUserAttributePersister {
             Map<String, String> safeClaimMap = customClaimMap != null ? customClaimMap : Collections.emptyMap();
             Map<String, String> localClaims = resolveLocalClaims(safeClaimMap, identityProvider, tenantDomain,
                     tokReqMsgCtx);
+            // Ensure userid from JWT sub when claim map omitted it.
+            if (StringUtils.isNotBlank(subject)
+                    && StringUtils.isBlank(localClaims.get(JWTConstants.LOCAL_CLAIM_USERID))) {
+                localClaims.put(JWTConstants.LOCAL_CLAIM_USERID,
+                        MultitenantUtils.getTenantAwareUsername(subject.trim()));
+            }
             Map<String, String> toWrite = filterPersistedClaims(localClaims);
             List<String> rolesToSync = persistRoles
                     ? resolveRolesToSync(customClaims, safeClaimMap, identityProvider)
@@ -244,12 +251,13 @@ public class JWTUserAttributePersister {
         if (source == null) {
             return;
         }
+        putIfAbsent(target, JWTConstants.LOCAL_CLAIM_USERID, firstNonBlank(source,
+                "sub", "userId", "userid", JWTConstants.LOCAL_CLAIM_USERID));
+        putIfAbsent(target, JWTConstants.LOCAL_CLAIM_USERNAME, firstNonBlank(source,
+                "preferred_username", "username", "nickname", "nickName", JWTConstants.LOCAL_CLAIM_USERNAME,
+                JWTConstants.LOCAL_CLAIM_NICKNAME));
         putIfAbsent(target, JWTConstants.LOCAL_CLAIM_EMAIL, firstNonBlank(source,
                 "email", JWTConstants.LOCAL_CLAIM_EMAIL, "http://wso2.org/claims/emailaddress"));
-        putIfAbsent(target, JWTConstants.LOCAL_CLAIM_DISPLAY_NAME, firstNonBlank(source,
-                "name", "displayName", "display_name", JWTConstants.LOCAL_CLAIM_DISPLAY_NAME));
-        putIfAbsent(target, JWTConstants.LOCAL_CLAIM_NICKNAME, firstNonBlank(source,
-                "preferred_username", "nickname", "nickName", "username", JWTConstants.LOCAL_CLAIM_NICKNAME));
         putIfAbsent(target, JWTConstants.LOCAL_CLAIM_MOBILE, firstNonBlank(source,
                 "phoneNumber", "phone_number", "mobile", "phone", JWTConstants.LOCAL_CLAIM_MOBILE));
     }
@@ -504,21 +512,21 @@ public class JWTUserAttributePersister {
                 continue;
             }
             if (!userStoreManager.isExistingRole(role)) {
-                log.warn("JWT role sync skip unknown local role for username=" + username + ", role=" + role);
+                log.debug("JWT role sync skip unknown local role for username=" + username + ", role=" + role);
                 continue;
             }
             toAdd.add(role);
         }
 
         if (toAdd.isEmpty()) {
-            log.info("JWT role sync nothing to add for username=" + username
+            log.debug("JWT role sync nothing to add for username=" + username
                     + ", existing=" + Arrays.toString(existingRoles) + ", desired=" + desiredRoles);
             return;
         }
 
-        log.info("JWT role sync assigning roles for username=" + username + ", roles=" + toAdd);
+        log.debug("JWT role sync assigning roles for username=" + username + ", roles=" + toAdd);
         userStoreManager.updateRoleListOfUser(username, null, toAdd.toArray(new String[0]));
-        log.info("JWT role sync updateRoleListOfUser ok: username=" + username + ", added=" + toAdd);
+        log.debug("JWT role sync updateRoleListOfUser ok: username=" + username + ", added=" + toAdd);
     }
 
     private static void addRolesFromDelimitedString(Set<String> target, String raw) {

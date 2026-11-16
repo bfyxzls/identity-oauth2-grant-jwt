@@ -60,6 +60,10 @@ public class JWTConstants {
     public static final String LOCAL_CLAIM_DISPLAY_NAME = "http://wso2.org/claims/displayname";
     public static final String LOCAL_CLAIM_NICKNAME = "http://wso2.org/claims/nickname";
     public static final String LOCAL_CLAIM_MOBILE = "http://wso2.org/claims/mobile";
+    /** Audit / profile: stable user id (often JWT {@code sub}). */
+    public static final String LOCAL_CLAIM_USERID = "http://wso2.org/claims/userid";
+    /** Audit / profile: login display name (preferred_username). */
+    public static final String LOCAL_CLAIM_USERNAME = "http://wso2.org/claims/username";
 
     public static final String ROLE_INTERNAL_SUBSCRIBER = "Internal/subscriber";
     public static final String LOCAL_CLAIM_ROLE = "http://wso2.org/claims/role";
